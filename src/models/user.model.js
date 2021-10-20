@@ -13,11 +13,19 @@ const userSchema = mongoose.Schema(
       trim: true,
     },
     email: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+      lowercase: true,
+      validate: (value) => {
+        return validator.isEmail(value);
+      }
     },
     password: {
       type: String,
       validate(value) {
-        if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
+        if (!value.match(/\d/) || !value.match(/[a-zA-Z]/) || value.length < 8) {
           throw new Error(
             "Password must contain at least one letter and one number"
           );
@@ -25,6 +33,9 @@ const userSchema = mongoose.Schema(
       },
     },
     walletMoney: {
+      type: Number,
+      required: true,
+      default: config.default_wallet_money
     },
     address: {
       type: String,
@@ -44,6 +55,7 @@ const userSchema = mongoose.Schema(
  * @returns {Promise<boolean>}
  */
 userSchema.statics.isEmailTaken = async function (email) {
+  return await this.find({email: email}).count() > 0;
 };
 
 
@@ -57,3 +69,5 @@ userSchema.statics.isEmailTaken = async function (email) {
 /**
  * @typedef User
  */
+
+ module.exports.User = mongoose.model("User", userSchema);
