@@ -25,7 +25,7 @@ const userSchema = mongoose.Schema(
     password: {
       type: String,
       validate(value) {
-        if (!value.match(/\d/) || !value.match(/[a-zA-Z]/) || value.length < 8) {
+        if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
           throw new Error(
             "Password must contain at least one letter and one number"
           );
@@ -56,6 +56,29 @@ const userSchema = mongoose.Schema(
  */
 userSchema.statics.isEmailTaken = async function (email) {
   return await this.find({email: email}).count() > 0;
+};
+
+userSchema.pre("save", function(next) {
+  let user = this;
+  if(!user.isModified('password')) return next();
+
+  bcrypt.genSalt(10, function(err, salt){
+    if(err) return next(err);
+    bcrypt.hash(user.password, salt, function(err, hash) {
+      if(err) return next(err);
+      user.password = hash;
+      next();
+    });
+  });
+});
+
+/**
+ * Check if entered password matches the user's password
+ * @param {string} password
+ * @returns {Promise<boolean>}
+ */
+userSchema.methods.isPasswordMatch = async function (password) {
+  return bcrypt.compareSync(password, this.password);
 };
 
 

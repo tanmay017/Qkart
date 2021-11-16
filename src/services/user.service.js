@@ -10,7 +10,6 @@ const ApiError = require("../utils/ApiError");
  * @returns {Promise<User>}
  */
 const getUserById = async (id) => {
-    let uid = id;
     const match = await User.findById(id);
     return match;
 }
@@ -24,6 +23,7 @@ const getUserById = async (id) => {
  */
 const getUserByEmail = async (email) => {
     const match = await User.findOne({email: email});
+    console.log(match);
     return match;
 }
 // TODO: CRIO_TASK_MODULE_UNDERSTANDING_BASICS - Implement createUser(user)
@@ -52,11 +52,12 @@ const getUserByEmail = async (email) => {
  const createUser = async (user) => {
     const isEmailTaken = await User.isEmailTaken(user.email);
     if(isEmailTaken) {
+        
         throw new ApiError(httpStatus.OK, "Email already taken");
     }
     else {
-        User.create(user);
-        return user;
+        const newUser = await User.create(user);
+        return newUser;
     }
  }
 
