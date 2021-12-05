@@ -3,7 +3,6 @@ const { Cart, Product } = require("../models");
 const ApiError = require("../utils/ApiError");
 const config = require("../config/config");
 
-// TODO: CRIO_TASK_MODULE_CART - Implement the Cart service methods
 
 /**
  * Fetches cart for a user
@@ -168,10 +167,44 @@ const deleteProductFromCart = async (user, productId) => {
   await cart.save();
 };
 
+// TODO: CRIO_TASK_MODULE_TEST - Implement checkout function
+/**
+ * Checkout a users cart.
+ * On success, users cart must have no products.
+ *
+ * @param {User} user
+ * @returns {Promise}
+ * @throws {ApiError} when cart is invalid
+ */
+const checkout = async (user) => {
+  const cart = await Cart.findOne({email: user.email});
+  if(!cart) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User does not have a cart");
+  }
+  if(cart.cartItems.length == 0) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Cart does not have any product");
+  }
+  if(!(await user.hasSetNonDefaultAddress())) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Address is not set")
+  }
+  let totalCostForPurchase = 0;
+  cart.cartItems.forEach((item) => {
+    totalCostForPurchase += item.product.cost * item.quantity 
+  })
+  if(user.walletMoney < totalCostForPurchase) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Insufficient Wallet Balance")
+  }
+  const updatedBalance = user.walletMoney - totalCostForPurchase;
+  user.walletMoney = updatedBalance;
+  cart.cartItems = [];
+  await user.save();
+  await cart.save();
+};
 
 module.exports = {
   getCartByUser,
   addProductToCart,
   updateProductInCart,
   deleteProductFromCart,
+  checkout,
 };
